@@ -1,0 +1,204 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: jaeger-admin-gateway
+  app: admin-gateway
+  namespace: istio-system
+spec:
+  selector:
+    istio: admin-ingressgateway # use admin controller
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "jaeger.admin.gcp.wescale"
+    - "jaeger.localhost"
+  - port:
+      number: 8080
+      name: http-local
+      protocol: HTTP
+    hosts:
+    - "jaeger.admin.gcp.wescale"
+    - "jaeger.localhost"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: prometheus-admin-gateway
+  app: admin-gateway
+  namespace: istio-system
+spec:
+  selector:
+    istio: admin-ingressgateway # use admin controller
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "prometheus.admin.gcp.wescale"
+    - "prometheus.localhost"
+  - port:
+      number: 8080
+      name: http-local
+      protocol: HTTP
+    hosts:
+    - "prometheus.admin.gcp.wescale"
+    - "prometheus.localhost"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: servicegraph-admin-gateway
+  app: admin-gateway
+  namespace: istio-system
+spec:
+  selector:
+    istio: admin-ingressgateway # use admin controller
+  servers:
+  - port:
+      number: 80
+      name: http-local
+      protocol: HTTP
+    hosts:
+    - "servicegraph.admin.gcp.wescale"
+    - "servicegraph.localhost"
+  - port:
+      number: 8080
+      name: http
+      protocol: HTTP
+    hosts:
+    - "servicegraph.admin.gcp.wescale"
+    - "servicegraph.localhost"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: grafana-admin-gateway
+  app: admin-gateway
+  namespace: istio-system
+spec:
+  selector:
+    istio: admin-ingressgateway # use admin controller
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "grafana.admin.gcp.wescale"
+    - "grafana.localhost"
+  - port:
+      number: 8080
+      name: http-local
+      protocol: HTTP
+    hosts:
+    - "grafana.admin.gcp.wescale"
+    - "grafana.localhost"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: kiali-admin-gateway
+  app: admin-gateway
+  namespace: istio-system
+spec:
+  selector:
+    istio: admin-ingressgateway # use admin controller
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "kiali.admin.gcp.wescale"
+    - "kiali.localhost"
+  - port:
+      number: 8080
+      name: http-local
+      protocol: HTTP
+    hosts:
+    - "kiali.admin.gcp.wescale"
+    - "kiali.localhost"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: jaeger
+  namespace: istio-system
+spec:
+  hosts:
+  - "jaeger.localhost"
+  gateways:
+  - jaeger-admin-gateway
+  http:
+  - route:
+    - destination:
+        host: jaeger-query
+    timeout: 30s
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: prometheus
+  namespace: istio-system
+spec:
+  hosts:
+  - "prometheus.localhost"
+  gateways:
+  - prometheus-admin-gateway
+  http:
+  - route:
+    - destination:
+        host: prometheus
+    timeout: 30s
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: servicegraph
+  namespace: istio-system
+spec:
+  hosts:
+  - "servicegraph.localhost"
+  gateways:
+  - servicegraph-admin-gateway
+  http:
+  - route:
+    - destination:
+        host: servicegraph
+    timeout: 30s
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: grafana
+  namespace: istio-system
+spec:
+  hosts:
+  - "grafana.localhost"
+  gateways:
+  - grafana-admin-gateway
+  http:
+  - route:
+    - destination:
+        host: grafana
+    timeout: 30s
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: kiali
+  namespace: istio-system
+spec:
+  hosts:
+  - "kiali.localhost"
+  gateways:
+  - kiali-admin-gateway
+  http:
+  - route:
+    - destination:
+        host: kiali
+    timeout: 30s

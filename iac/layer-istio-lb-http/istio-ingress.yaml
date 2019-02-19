@@ -1,0 +1,25 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: iap-ingress
+  namespace: istio-system
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: "istio-lb-http"
+    ingress.gcp.kubernetes.io/pre-shared-cert: "gcp-wescale-iap-cert"
+spec:
+  backend:
+    serviceName: iap-ingressgateway
+    servicePort: http2
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: public-ingress
+  namespace: istio-system
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: "public-lb-http"
+    ingress.gcp.kubernetes.io/pre-shared-cert: "gcp-wescale-public-cert"
+spec:
+  backend:
+    serviceName: public-ingressgateway
+    servicePort: http2

@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: injector-twitter-gcp-deploy
+  namespace: injectors
+  labels:
+    app: injector-twitter-gcp-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: injector-twitter-gcp-deploy
+  template:
+    metadata:
+      labels:
+        app: injector-twitter-gcp-deploy
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/injector: 'true'
+        prometheus.io/path: '/metrics'
+        prometheus.io/port: '8080'
+    spec:
+      containers:
+      - name: my-injector
+        image: eu.gcr.io/slavayssiere-sandbox/twitter-injector:0.0.17
+        imagePullPolicy: Always
+        env:
+        - name: TOPIC_NAME
+          value: "projects/slavayssiere-sandbox/topics/twitter-raw"
+        - name: HASHTAG
+          value: "#gcp"
+        - name: SECRET_PATH
+          value: "/secret/sa-pubsub-publisher.json"
+        - name: ZIPKIN_ENDPOINT
+          value: "zipkin.istio-system.svc.cluster.local"
+        - name: CONSUMER_KEY
+          valueFrom:
+            secretKeyRef:
+              name: twitter-secrets
+              key: CONSUMER_KEY
+        - name: CONSUMER_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: twitter-secrets
+              key: CONSUMER_SECRET
+        - name: ACCESS_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: twitter-secrets
+              key: ACCESS_TOKEN
+        - name: ACCESS_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: twitter-secrets
+              key: ACCESS_SECRET
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            memory: 80M
+            cpu: 500m
+          limits:
+            memory: 80M
+            cpu: 500m
+        volumeMounts:
+          - name: secret-sa
+            mountPath: "/secret"
+            readOnly: true
+      volumes:
+      - name: secret-sa
+        secret:
+          secretName: sa-pubsub-publisher

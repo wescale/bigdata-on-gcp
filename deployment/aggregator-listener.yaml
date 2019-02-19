@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aggregator-listener-deploy
+  namespace: consumers
+  labels:
+    app: aggregator-listener-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aggregator-listener-deploy
+  template:
+    metadata:
+      labels:
+        app: aggregator-listener-deploy
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/path: '/metrics'
+        prometheus.io/port: '8080'
+        prometheus.io/normalizer: 'true'
+    spec:
+      containers:
+      - name: my-ds
+        image: eu.gcr.io/slavayssiere-sandbox/consumer-aggregator-listener:0.0.2
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: SUB_NAME 
+          value: "projects/slavayssiere-sandbox/subscriptions/messages-normalized-sub-datastore"
+        - name: SECRET_PATH
+          value: "/secret/sa-pubsub-datastore.json"
+        - name: REDIS_HOST
+          value: redis.gcp.wescale
+        - name: ZIPKIN_ENDPOINT
+          value: "http://jaeger-collector.istio-system.svc.cluster.local:14268/api/traces"
+        ports:
+        - containerPort: 8080
+          name: http
+        resources:
+          requests:
+            memory: 50M
+            cpu: 50m
+          limits:
+            memory: 100M
+            cpu: 100m
+        volumeMounts:
+          - name: secret-sa
+            mountPath: "/secret"
+            readOnly: true
+      terminationGracePeriodSeconds: 15
+      volumes:
+      - name: secret-sa
+        secret:
+          secretName: sa-pubsub-datastore
+---
+apiVersion: autoscaling/v2beta1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: aggregator-listener-hpa
+  namespace: consumers
+spec:
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - external:
+      metricName: pubsub.googleapis.com|subscription|num_undelivered_messages
+      metricSelector:
+        matchLabels:
+          resource.labels.subscription_id: "messages-normalized-sub-datastore"
+      targetAverageValue: "10"
+    type: External
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: aggregator-listener-deploy

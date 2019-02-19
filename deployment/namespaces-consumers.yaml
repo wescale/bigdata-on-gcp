@@ -1,0 +1,119 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    istio-injection: enabled
+  name: consumers
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: consumers-gateway-iap
+  app: consumers
+  namespace: consumers
+spec:
+  selector:
+    istio: ingressgateway # use istio default controller
+    app: iap-ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "iap.gcp-wescale.slavayssiere.fr"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: consumers-gateway-public
+  app: consumers
+  namespace: consumers
+spec:
+  selector:
+    istio: ingressgateway # use istio default controller
+    app: public-ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "public.gcp-wescale.slavayssiere.fr"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name: redis-egress
+  namespace: consumers
+spec:
+  hosts:
+  - redis.gcp.wescale
+  addresses:
+  - 10.254.0.0/29
+  ports:
+  - name: redis
+    number: 6379
+    protocol: TCP
+  location: MESH_EXTERNAL
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name: services-google-egress
+  namespace: consumers
+spec:
+  hosts:
+  - "storage.cloud.google.com"
+  - "*.googleapis.com"
+  - 169.254.169.254 # metadata.google.internal
+  location: MESH_EXTERNAL
+  ports:
+  - number: 443
+    name: https
+    protocol: HTTPS
+  - number: 80
+    name: http
+    protocol: HTTP
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: google-storage-egress-vs
+  namespace: consumers
+spec:
+  hosts:
+  - storage.cloud.google.com
+  - www.googleapis.com
+  tls:
+  - match:
+    - port: 443
+      sni_hosts:
+      - storage.cloud.google.com
+    route:
+    - destination:
+        host: storage.cloud.google.com
+  - match:
+    - port: 443
+      sni_hosts:
+      - www.googleapis.com
+    route:
+    - destination:
+        host: www.googleapis.com
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: redis-egress-vs
+  namespace: consumers
+spec:
+  hosts:
+  - redis.gcp.wescale
+  tcp:
+  - match:
+    - port: 6379
+    route:
+    - destination:
+        host: redis.gcp.wescale
+        port:
+          number: 6379

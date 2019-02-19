@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: injector-mastodon-deploy
+  namespace: injectors
+  labels:
+    app: injector-mastodon-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: injector-mastodon-deploy
+  template:
+    metadata:
+      labels:
+        app: injector-mastodon-deploy
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/injector: 'true'
+        prometheus.io/path: '/metrics'
+        prometheus.io/port: '8080'
+    spec:
+      containers:
+      - name: my-injector
+        image: eu.gcr.io/slavayssiere-sandbox/mastodon-injector:0.0.1
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: TOPIC_NAME
+          value: "projects/slavayssiere-sandbox/topics/mastodon-raw"
+        - name: HASHTAG
+          value: "#anarchism"
+        - name: SECRET_PATH
+          value: "/secret/sa-pubsub-publisher.json"
+        - name: MASTODON_SERVER
+          valueFrom:
+            secretKeyRef:
+              name: mastodon-secrets
+              key: MASTODON_SERVER
+        - name: MASTODON_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: mastodon-secrets
+              key: MASTODON_CLIENT_ID
+        - name: MASTODON_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: mastodon-secrets
+              key: MASTODON_CLIENT_SECRET
+        - name: MASTODON_LOGIN
+          valueFrom:
+            secretKeyRef:
+              name: mastodon-secrets
+              key: MASTODON_LOGIN
+        - name: MASTODON_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mastodon-secrets
+              key: MASTODON_PASSWORD
+        ports:
+        - containerPort: 8080
+          name: http
+        resources:
+          requests:
+            memory: 80M
+            cpu: 500m
+          limits:
+            memory: 80M
+            cpu: 500m
+        volumeMounts:
+          - name: secret-sa
+            mountPath: "/secret"
+            readOnly: true
+      volumes:
+      - name: secret-sa
+        secret:
+          secretName: sa-pubsub-publisher

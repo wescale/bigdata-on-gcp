@@ -1,0 +1,41 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name: services-google-egress
+spec:
+  hosts:
+  - "storage.cloud.google.com"
+  - "*.googleapis.com"
+  - 169.254.169.254 # metadata.google.internal
+  location: MESH_EXTERNAL
+  ports:
+  - number: 443
+    name: https
+    protocol: HTTPS
+  - number: 80
+    name: http
+    protocol: HTTP
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: google-storage-egress-vs
+spec:
+  hosts:
+  - storage.cloud.google.com
+  - www.googleapis.com
+  tls:
+  - match:
+    - port: 443
+      sni_hosts:
+      - storage.cloud.google.com
+    route:
+    - destination:
+        host: storage.cloud.google.com
+  - match:
+    - port: 443
+      sni_hosts:
+      - www.googleapis.com
+    route:
+    - destination:
+        host: www.googleapis.com

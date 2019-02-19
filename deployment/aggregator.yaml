@@ -1,0 +1,117 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aggregator-deploy
+  namespace: consumers
+  labels:
+    app: aggregator-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aggregator-deploy
+  template:
+    metadata:
+      labels:
+        app: aggregator-deploy
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/path: '/metrics'
+        prometheus.io/port: '8080'
+        prometheus.io/normalizer: 'true'
+    spec:
+      containers:
+      - name: my-ds
+        image: eu.gcr.io/slavayssiere-sandbox/consumer-aggregator:0.0.23
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: SUB_NAME 
+          value: "projects/slavayssiere-sandbox/subscriptions/messages-normalized-sub-datastore"
+        - name: SUB_AGGREGA 
+          value: "projects/slavayssiere-sandbox/subscriptions/aggregator-queue-sub"
+        - name: SECRET_PATH
+          value: "/secret/sa-pubsub-datastore.json"
+        - name: REDIS_HOST
+          value: redis.gcp.wescale
+        - name: PATH_PREFIX
+          value: "/aggregator"
+        - name: ZIPKIN_ENDPOINT
+          value: "http://jaeger-collector.istio-system.svc.cluster.local:14268/api/traces"
+        ports:
+        - containerPort: 8080
+          name: http
+        resources:
+          requests:
+            memory: 50M
+            cpu: 50m
+          limits:
+            memory: 100M
+            cpu: 100m
+        volumeMounts:
+          - name: secret-sa
+            mountPath: "/secret"
+            readOnly: true
+      terminationGracePeriodSeconds: 15
+      volumes:
+      - name: secret-sa
+        secret:
+          secretName: sa-pubsub-datastore
+---
+apiVersion: autoscaling/v2beta1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: aggregator-hpa
+  namespace: consumers
+spec:
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - external:
+      metricName: pubsub.googleapis.com|subscription|num_undelivered_messages
+      metricSelector:
+        matchLabels:
+          resource.labels.subscription_id: "messages-normalized-sub-datastore"
+      targetAverageValue: "10"
+    type: External
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: aggregator-deploy
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aggregator-svc
+  namespace: consumers
+  labels:
+    k8s-app: aggregator-svc
+spec:
+  selector:
+    app: aggregator-deploy
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+      name: http
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: aggregator-virtualservice
+  namespace: consumers
+spec:
+  hosts:
+  - "iap.gcp-wescale.slavayssiere.fr"
+  - "public.gcp-wescale.slavayssiere.fr"
+  gateways:
+  - consumers-gateway-iap
+  - consumers-gateway-public
+  http:
+  - match:
+    - uri:
+        prefix: "/aggregator"
+    route:
+    - destination:
+        host: aggregator-svc
+
+

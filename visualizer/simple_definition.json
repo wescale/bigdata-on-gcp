@@ -1,0 +1,45 @@
+{
+    "sourceFormat": "BIGTABLE",
+    "sourceUris": [
+        "https://googleapis.com/bigtable/projects/slavayssiere-sandbox/instances/test-instance/tables/test-table"
+    ],
+    "bigtableOptions": {
+        "readRowkeyAsString": "true",
+        "columnFamilies" : [
+            {
+                "familyId": "ms",
+                "onlyReadLatest": "true",
+                "columns": [
+                    {
+                        "qualifierString": "data",
+                        "type": "STRING"
+                    },
+                    {
+                        "qualifierString": "user",
+                        "type": "STRING"
+                    },
+                    {
+                        "qualifierString": "source",
+                        "type": "STRING"
+                    },
+                    {
+                        "qualifierString": "time",
+                        "type": "STRING"
+                    },
+                    {
+                        "qualifierString": "tag",
+                        "type": "STRING"
+                    },
+                    {
+                        "qualifierString": "sentiment",
+                        "type": "STRING"
+                    },
+                    {
+                        "qualifierString": "ID",
+                        "type": "STRING"
+                    }
+                ]
+            }
+        ]
+    }
+}

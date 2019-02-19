@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+    <title>WeScale live Flux</title>
+    <link rel="icon" href="https://www.wescale.fr/images/favicon.ico" />
+</head>
+<style>
+h1 {
+    background-color: #09aa9d;
+    padding-bottom: 10px;
+    border-top-width: 10px;
+    padding-top: 10px;
+    padding-left: 20px;
+    font-family: 'Open Sans Condensed', sans-serif;
+    line-height: 20px;
+    font-size: 40px;
+    font-weight: bold;
+    color: white;
+    text-transform: uppercase;
+}
+#fleet-1 {
+    padding-bottom: 10px;
+    border-top-width: 10px;
+    padding-top: 10px;
+    padding-left: 20px;
+}
+
+#fleet-2 {
+    padding-bottom: 10px;
+    border-top-width: 10px;
+    padding-top: 10px;
+    padding-left: 20px;
+}
+
+#fleet-3 {
+    padding-bottom: 10px;
+    border-top-width: 10px;
+    padding-top: 10px;
+    padding-left: 20px;
+}
+
+#common {
+    background-image: url(https://www.wescale.fr/images/bg-sun-cloud-head.jpg);
+    /* background-repeat: no-repeat; */
+    background-position: center center;
+    background-size: cover;
+}
+</style>
+<body id="common">
+    <h1><img src="https://www.wescale.fr/images/logo.png" style="padding-right: 20px;">Live Messages Sociaux</h1>
+
+    <div class="row">
+        <div class="col-md-4" id="fleet-1"></div>
+        <div class="col-md-4" id="fleet-2"></div>
+        <div class="col-md-4" id="fleet-3"></div>
+    </div>
+
+
+    <script type="text/javascript">
+        // Create a new HTML5 EventSource
+        var nb = 1;
+        if (!!window.EventSource) {
+            var source = new EventSource('/eventspublic/');
+            // Create a callback for when a new message is received.
+            // source.onmessage = function(e) {
+            //     // Append the `data` attribute of the message to the DOM.
+            //     console.log(e);
+            // };
+            
+            // source.onopen = function(e) {
+            //     console.log(e);
+            // }
+
+            // source.onerror = function(e){
+            //     console.log(e);
+            // }
+
+            // {"data":"...","user":"lagrost anne","source":"twitter","tag":"#GiletsJaunes","timestamp":"2019-01-30T16:17:37.206025277Z","sentiment":0,"id":"1090645193970339843"}
+            source.addEventListener('message', function(e) {
+                var data = JSON.parse(e.data);
+                var src
+                if (data.source === 'twitter') {
+                    src = '<img src="http://assets.gcp-wescale.slavayssiere.fr/twitter.png" height="20px" />'
+                } else {
+                    src = data.source
+                }
+                var fleetDiv = document.getElementById('fleet-'+nb);
+                nb = nb + 1;
+                if (nb == 4) {
+                    nb = 1;
+                }
+                var tmp = fleetDiv.innerHTML
+                fleetDiv.innerHTML = '<div class="card text-white bg-primary mb-3">' 
+                    + '<div class="card-header">' + src + ' / ' + data.tag + '</div>'
+                    + '<div class="card-body">'
+                    + '<h5 class="card-title">' + data.user + '</h5>'
+                    + '<p class="card-text">' + data.data + '</p>'
+                    + '</div>'
+                    + '</div>' + tmp;
+            }, false);
+
+            source.addEventListener('open', function(e) {
+                // Connection was opened.
+                console.log("open EventSource ", e)
+            }, false);
+
+            source.addEventListener('error', function(e) {
+                if (e.readyState == EventSource.CLOSED) {
+                    // Connection was closed.
+                    console.log("close EventSource ", e)
+                }
+            }, false);
+        } else {
+            console.log("error on EventSource")
+        }
+
+    </script>
+</body>
+</html>

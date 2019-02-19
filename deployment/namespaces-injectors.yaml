@@ -1,0 +1,201 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    istio-injection: enabled
+  name: injectors
+---
+## we have to allow:
+## 
+##    - api.twitter.com
+##    - stream.twitter.com
+##    - gnip-stream.twitter.com
+##
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name: twitter-egress
+  namespace: injectors
+spec:
+  hosts:
+  - api.twitter.com
+  - stream.twitter.com
+  - userstream.twitter.com
+  - sitestream.twitter.com
+  - gnip-stream.twitter.com
+  location: MESH_EXTERNAL
+  ports:
+  - number: 443
+    name: https
+    protocol: HTTPS
+  - number: 80
+    name: http
+    protocol: HTTP
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: twitter-egress-vs
+  namespace: injectors
+spec:
+  hosts:
+  - api.twitter.com
+  tls:
+  - match:
+    - port: 443
+      sni_hosts:
+      - api.twitter.com
+    route:
+    - destination:
+        host: api.twitter.com
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: stream-twitter-egress-vs
+  namespace: injectors
+spec:
+  hosts:
+  - stream.twitter.com
+  tls:
+  - match:
+    - port: 443
+      sni_hosts:
+      - stream.twitter.com
+    route:
+    - destination:
+        host: stream.twitter.com
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: userstream-twitter-egress-vs
+  namespace: injectors
+spec:
+  hosts:
+  - userstream.twitter.com
+  tls:
+  - match:
+    - port: 443
+      sni_hosts:
+      - userstream.twitter.com
+    route:
+    - destination:
+        host: userstream.twitter.com
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: sitestream-twitter-egress-vs
+  namespace: injectors
+spec:
+  hosts:
+  - sitestream.twitter.com
+  tls:
+  - match:
+    - port: 443
+      sni_hosts:
+      - sitestream.twitter.com
+    route:
+    - destination:
+        host: sitestream.twitter.com
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: pro-stream-twitter-egress-vs
+  namespace: injectors
+spec:
+  hosts:
+  - gnip-stream.twitter.com
+  tls:
+  - match:
+    - port: 443
+      sni_hosts:
+      - gnip-stream.twitter.com
+    route:
+    - destination:
+        host: gnip-stream.twitter.com
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name: services-google-egress
+  namespace: injectors
+spec:
+  hosts:
+  - "storage.cloud.google.com"
+  - "*.googleapis.com"
+  - 169.254.169.254 # metadata.google.internal
+  location: MESH_EXTERNAL
+  ports:
+  - number: 443
+    name: https
+    protocol: HTTPS
+  - number: 80
+    name: http
+    protocol: HTTP
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: google-storage-egress-vs
+  namespace: injectors
+spec:
+  hosts:
+  - storage.cloud.google.com
+  - www.googleapis.com
+  tls:
+  - match:
+    - port: 443
+      sni_hosts:
+      - storage.cloud.google.com
+    route:
+    - destination:
+        host: storage.cloud.google.com
+  - match:
+    - port: 443
+      sni_hosts:
+      - www.googleapis.com
+    route:
+    - destination:
+        host: www.googleapis.com
+---
+## we have to allow:
+## 
+##    - linuxrocks.online
+##
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name: mastodon-egress
+  namespace: injectors
+spec:
+  hosts:
+  - linuxrocks.online
+  location: MESH_EXTERNAL
+  ports:
+  - number: 443
+    name: https
+    protocol: HTTPS
+  - number: 80
+    name: http
+    protocol: HTTP
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: mastodon-egress-vs
+  namespace: injectors
+spec:
+  hosts:
+  - linuxrocks.online
+  tls:
+  - match:
+    - port: 443
+      sni_hosts:
+      - linuxrocks.online
+    route:
+    - destination:
+        host: linuxrocks.online
+---

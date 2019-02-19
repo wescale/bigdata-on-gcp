@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: normalized-twitter-deploy
+  namespace: normalizers
+  labels:
+    app: normalized-twitter-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: normalized-twitter-deploy
+  template:
+    metadata:
+      labels:
+        app: normalized-twitter-deploy
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/path: '/metrics'
+        prometheus.io/port: '8080'
+        prometheus.io/normalizer: 'true'
+    spec:
+      containers:
+      - name: my-normalized
+        image: eu.gcr.io/slavayssiere-sandbox/twitter-normalizer:0.0.12
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: SUB_NAME 
+          value: "projects/slavayssiere-sandbox/subscriptions/twitter-raw-sub"
+        - name: TOPIC_NAME 
+          value: "projects/slavayssiere-sandbox/topics/messages-normalized"
+        - name: SECRET_PATH
+          value: "/secret/sa-pubsub-full.json"
+        - name: LANGUAGE
+          value: "false"
+        - name: ZIPKIN_ENDPOINT
+          value: "http://jaeger-collector.istio-system.svc.cluster.local:14268/api/traces"
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            memory: 20M
+            cpu: 10m
+          limits:
+            memory: 20M
+            cpu: 10m
+        volumeMounts:
+          - name: secret-sa
+            mountPath: "/secret"
+            readOnly: true
+      terminationGracePeriodSeconds: 15
+      volumes:
+      - name: secret-sa
+        secret:
+          secretName: sa-pubsub-full
+---
+apiVersion: autoscaling/v2beta1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: normalized-twitter-name
+  namespace: normalizers
+spec:
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - external:
+      metricName: pubsub.googleapis.com|subscription|num_undelivered_messages
+      metricSelector:
+        matchLabels:
+          resource.labels.subscription_id: "twitter-raw-sub"
+      targetAverageValue: "10"
+    type: External
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: normalized-twitter-deploy

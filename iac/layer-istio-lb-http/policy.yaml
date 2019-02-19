@@ -1,0 +1,17 @@
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: "Policy"
+metadata:
+  name: "ingressgateway"
+  namespace: istio-system
+spec:
+  targets:
+  - name: istio-ingressgateway
+  origins:
+  - jwt:
+      issuer: "https://cloud.google.com/iap"
+      jwksUri: "https://www.gstatic.com/iap/verify/public_key-jwk"
+      audiences: 
+      - "IAP_AUDIENCE"
+      jwt_headers: 
+      - "x-goog-iap-jwt-assertion"
+  principalBinding: USE_ORIGIN
